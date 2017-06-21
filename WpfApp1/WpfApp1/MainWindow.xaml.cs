@@ -16,6 +16,7 @@ using ClosedXML.Excel;
 using System.Data;
 using System.IO;
 using Excel;
+using Microsoft.Win32;
 
 namespace WpfApp1
 {
@@ -27,24 +28,51 @@ namespace WpfApp1
         public MainWindow()
         {
             InitializeComponent();
+        }
 
-            FileStream stream = File.Open("2003.xls", FileMode.Open, FileAccess.Read);
+        private void btnSelectExcel_Click(object sender, RoutedEventArgs e)
+        {
 
-            // Choose one of either 1 or 2
-            // 1. Reading from a binary Excel file ('97-2003 format; *.xls)
-            IExcelDataReader excelReader = ExcelReaderFactory.CreateBinaryReader(stream);
+            OpenFileDialog openFileDialog = new OpenFileDialog();
 
-            // 4. DataSet - Create column names from first row
-            excelReader.IsFirstRowAsColumnNames = true;
-            DataSet result = excelReader.AsDataSet();
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.Filter = "Excel documents(*.xls;*.xlsx)|*.xls;*.xlsx";
 
-            // 6. Free resources (IExcelDataReader is IDisposable)
-            excelReader.Close();
-              this.DataContext = result;
-            //foreach (DataTable item in result.Tables)
-            //{
-            //    MyTab.Items.Add(new TabItem { Header = item.TableName, Content = new DataGrid { ItemsSource = new DataView(item) } });
-            //}
+
+            bool? result = openFileDialog.ShowDialog();
+            if (result == true)
+            {
+                if (openFileDialog.FileName.Length > 0)
+                {
+                    txbSelectedExcelFile.Text = openFileDialog.FileName;
+                }
+            }
+
+        }
+
+        private void btnViewExcel_Click(object sender, RoutedEventArgs e)
+        {
+            string excel = txbSelectedExcelFile.Text;
+            if (string.IsNullOrEmpty(excel) || !File.Exists(excel))
+            {
+                MessageBox.Show("The file is invalid. Please select an existing file again.");
+            }
+            else
+            {
+
+                using (FileStream stream = File.Open(excel, FileMode.Open, FileAccess.Read))
+                using (IExcelDataReader excelReader = excel.ToLower()
+                    .Contains(".xlsx") ?
+                    ExcelReaderFactory.CreateOpenXmlReader(stream)
+                : ExcelReaderFactory.CreateBinaryReader(stream))
+                {
+
+                    excelReader.IsFirstRowAsColumnNames = true;
+                    DataSet result = excelReader.AsDataSet(); 
+                    this.DataContext = result;
+                }
+
+            }
         }
     }
 }
